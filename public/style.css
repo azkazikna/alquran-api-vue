@@ -1,5 +1,5 @@
 body {
-    font-family: 'Quicksand', sans-serif;
+    font-family: 'Quicksand', sans-serif!important;
 }
 
 footer {
@@ -192,3 +192,6 @@ color: #ffd700; /* Emas */
     z-index: 990;
   }
   
+  .overlay.reveal {
+    display: block;
+  }

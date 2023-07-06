@@ -1,4 +1,7 @@
 <template>
+    
+
+    
     <div class="container mt-5">
         <div class="row">
             <div class="mx-auto text-center mb-5">
@@ -28,47 +31,40 @@
                 <div class="audio-container">
                     <h2 class="arab ayat my-5 d-inline-block text-right" :style="'direction: rtl;'">
                         <span v-for="word in item.words">
-                            <audio :id="`audio-kata-${word.id}`" :src="`https://audio.qurancdn.com/${word.audio_url}`"></audio>
 
-                            <span tabindex="0" class="word-arab d-inline-block" @click="playAudioWord(word.id)" data-toggle="tooltip" data-placement="top" :title="word.translation.text" v-html="word.text_uthmani_tajweed"></span>
+                            <span tabindex="0" class="word-arab d-inline-block" id="tooltip" @click="playAudioWord(word)" data-bs-toggle="tooltip" data-bs-placement="top" :title="word.translation.text" v-html="word.text_uthmani_tajweed"></span>
                         </span>
                     </h2>
                 </div>
             </div>
             <p>
                 <span v-for="word in item.words" class="text-break">
-                    {{ word.transliteration.text }}
+                    {{ word.transliteration.text}} 
                 </span>
             </p>
             <p class="mt-4">
                 <span v-for="word in item.words">
-                    {{ word.translation.text }}
+                    {{ word.translation.text + ' ' }} 
                 </span>
             </p>
             <!-- Start Modal -->
-            <!-- <div wire:ignore.self class="modal fade" id="exampleModal{{ $item["verse_number"] }}" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+            <div class="modal fade" :id="`exampleModal${item.verse_number}`" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
                 <div class="modal-dialog modal-dialog-centered modal-xl">
                 <div class="modal-content">
                     <div class="modal-header">
-                    <h5 class="modal-title" id="exampleModalLabel">Tafsir {{ $data_surah["name_simple"] }} Ayat {{ $item["verse_number"] }}</h5>
+                    <h5 class="modal-title" id="exampleModalLabel">Tafsir {{ surah.name_simple }} Ayat {{ item.verse_number }}</h5>
                     <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                         <span aria-hidden="true">&times;</span>
                     </button>
                     </div>
                     <div class="modal-body">
-                        {{-- <select wire:model="id_tafsir" id="id_tafsir" class="form-control">
-                            @foreach ($data_tafsir as $tafsir)
-                                <option value="{{ $tafsir["id"] }}">{{ $tafsir["translated_name"]["name"] }}</option>
-                            @endforeach
-                        </select> --}}
-                    {{-- <p>{{ $id_tafsir }}</p> --}}
                     </div>
                     <div class="modal-footer">
                     <button type="button" class="btn btn-dark" data-dismiss="modal">Close</button>
                     </div>
                 </div>
                 </div>
-            </div> -->
+            </div>
             <!-- End Modal -->
         </div>
     </div>
@@ -77,19 +73,25 @@
 import axios from "axios";
 import { ref, onMounted } from "vue";
 import { useRoute } from "vue-router";
+import { Tooltip } from 'bootstrap';
+
 
 export default {
     setup() {
+
         const surahID = useRoute();
         const surah = ref({})
         const namaSurah = ref({})
         const surahInfo =  ref({})
         const ayat =  ref([])
         const audioAyat = ref([])
+        const audioPlayers = []; // Array to store audio players
+        const selectedLanguage = ref('')
 
-        onMounted(() => {
+        onMounted(async () => {
+
             //fetch surah
-            axios.get(`https://api.quran.com/api/v4/chapters/${surahID.params.id}?language=id`)
+            await axios.get(`https://api.quran.com/api/v4/chapters/${surahID.params.id}?language=${selectedLanguage.value}`)
                 .then(response => {
                     surah.value = response.data.chapter;
                     namaSurah.value = response.data.chapter.translated_name.name
@@ -98,7 +100,7 @@ export default {
                     console.error(error);
                 })
             //fetch info surah
-            axios.get(`https://api.quran.com/api/v4/chapters/${surahID.params.id}/info?language=id`)
+            await axios.get(`https://api.quran.com/api/v4/chapters/${surahID.params.id}/info?language=${selectedLanguage.value}`)
                 .then(response => {
                     surahInfo.value = response.data.chapter_info;
                 })
@@ -106,7 +108,7 @@ export default {
                     console.error(error);
                 })
             //fetch ayat
-            axios.get(`https://api.quran.com/api/v4/verses/by_chapter/${surahID.params.id}?language=id&words=true&word_fields=text_uthmani_tajweed&audio=2&per_page=300`)
+            await axios.get(`https://api.quran.com/api/v4/verses/by_chapter/${surahID.params.id}?language=${selectedLanguage.value}&words=true&word_fields=text_uthmani_tajweed&audio=2&per_page=300`)
                 .then(response => {
                     ayat.value = response.data.verses;
                 })
@@ -114,13 +116,20 @@ export default {
                     console.error(error);
                 })
             //fetch audio ayat
-            axios.get(`https://api.quran.com/api/v4/quran/recitations/1?chapter_number=${surahID.params.id}`)
+            await axios.get(`https://api.quran.com/api/v4/quran/recitations/1?chapter_number=${surahID.params.id}`)
                 .then(response => {
                     audioAyat.value = response.data.audio_files;
                 })
                 .catch(error => {
                     console.error(error);
                 }) 
+
+            const tooltipTriggerList = [].slice.call(
+                document.querySelectorAll('#tooltip')
+            );
+            tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new Tooltip(tooltipTriggerEl);
+            });
             
         });
 
@@ -144,10 +153,21 @@ export default {
             });
         }
 
-        const playAudioWord = (nomor) => {
-            var audio = document.getElementById("audio-kata-" + nomor);
-            audio.play();
-        } 
+        const playAudioWord = (word) => {
+            // Your existing playAudioAyat function
+
+            // Create and store audio player
+            const audioPlayer = new Audio(`https://audio.qurancdn.com/${word.audio_url}`);
+            audioPlayers.push(audioPlayer);
+
+            // Play audio
+            audioPlayer.play();
+        };
+
+        const callback = (language) => {
+            console.log(language);
+            selectedLanguage.value = language
+        }
 
         return {
             surah,
@@ -155,90 +175,13 @@ export default {
             ayat,
             audioAyat,
             namaSurah,
+            audioPlayers,
+            selectedLanguage,
             playAudioAyat,
-            playAudioWord
+            playAudioWord,
+            callback
         }
     }
-    // data() {
-    //     return {
-    //         surahID: this.$route.params.id,
-    //         surah: Object,
-    //         surahInfo: {},
-    //         ayat: [],
-    //         audioAyat: [],
-    //     }
-    // },
-    // created() {
-    //     this.fetchSurah()
-    //     this.fetchInfoSurah()
-    //     this.fetchAyat()
-    //     this.fetchAudioAyat()
-    // },
-    // methods: {
-    //     fetchSurah() {
-    //         axios.get(`https://api.quran.com/api/v4/chapters/${this.surahID}?language=id`)
-    //             .then(response => {
-    //                 this.surah = response.data.chapter;
-    //                 console.log(this.surah)
-    //             })
-    //             .catch(error => {
-    //                 console.error(error);
-    //             })
-    //     },
-    //     fetchInfoSurah() {
-    //         axios.get(`https://api.quran.com/api/v4/chapters/${this.surahID}/info?language=id`)
-    //             .then(response => {
-    //                 this.surahInfo = response.data.chapter_info;
-    //                 console.log(this.surahInfo)
-    //             })
-    //             .catch(error => {
-    //                 console.error(error);
-    //             })
-    //     },
-    //     fetchAyat() {
-    //         axios.get(`https://api.quran.com/api/v4/verses/by_chapter/${this.surahID}?language=id&words=true&word_fields=text_uthmani_tajweed&audio=2&per_page=300`)
-    //             .then(response => {
-    //                 this.ayat = response.data.verses;
-    //                 console.log(this.ayat)
-    //             })
-    //             .catch(error => {
-    //                 console.error(error);
-    //             })
-    //     },
-    //     fetchAudioAyat() {
-    //         axios.get(`https://api.quran.com/api/v4/quran/recitations/1?chapter_number=${this.surahID}`)
-    //             .then(response => {
-    //                 this.audioAyat = response.data.audio_files;
-    //                 console.log(this.audioAyat)
-    //             })
-    //             .catch(error => {
-    //                 console.error(error);
-    //             })
-    //     },
-    //     playAudioAyat(nomor) {
-    //         var audio = document.getElementById("audio-ayat-" + nomor);
-    //         var icon = document.getElementById("play-icon-" + nomor);
-
-    //         if (audio.paused) {
-    //             audio.play();
-    //             icon.classList.remove("fa-play");
-    //             icon.classList.add("fa-pause");
-    //         } else {
-    //             audio.pause();
-    //             icon.classList.remove("fa-pause");
-    //             icon.classList.add("fa-play");
-    //         }
-
-    //         audio.addEventListener("ended", function() {
-    //             icon.classList.remove("fa-pause");
-    //             icon.classList.add("fa-play");
-    //         });
-    //     },
-    //     playAudioWord(nomor) {
-    //         var audio = document.getElementById("audio-kata-" + nomor);
-    //         audio.play();
-    //     }
-    // }
 }
 </script>
 <style>

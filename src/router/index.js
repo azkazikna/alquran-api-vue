@@ -25,7 +25,8 @@ const routes = [
   {
     path: '/surah/:id',
     name: 'surah',
-    component: SurahView
+    component: SurahView,
+    props: true
   },
 ]
 
