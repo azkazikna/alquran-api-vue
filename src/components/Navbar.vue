@@ -34,7 +34,7 @@
         <div class="side-link">
           <div class="d-flex justify-content-between align-items-center">
             <p class="w-50 mt-2">Bahasa Terjemahan</p>
-            <select v-model="selectedLanguage" @change="$emit('someEvent', selectedLanguage.value)" id="language" class="form-control w-50">
+            <select v-model="selectedLanguage" @change="changeLanguage" id="language" class="form-control w-50">
               <option v-for="item in languages" :value="item.iso_code">{{ item.name }}</option>
             </select>
           </div>
@@ -53,57 +53,50 @@
 </template>
 <script>
     import axios from 'axios';
-    import { ref, onMounted } from 'vue';
 
     export default {
-      setup() {
+        name: 'Navbar',
+        data() {
+          return {
+            isSidebarVisible: false,
+            languages: [],
+            selectedLanguage: 'id',
+          }
+        },
+        methods: {
 
-        const isSidebarVisible = ref(false);
-        const languages = ref([]);
-        const selectedLanguage = ref('id');
-
-        const bukaSidebar = () => {
-          isSidebarVisible.value = true;
+          bukaSidebar() {
+            this.isSidebarVisible = true;
             // Menambahkan class 'reveal' ke '.overlay' untuk mengatur tampilan display menjadi 'block'
             const overlay = document.querySelector('.overlay');
             overlay.classList.add('reveal');
-        }
-        
-        const tutupSidebar = () => {
-          isSidebarVisible.value = false;
-          // Menambahkan class 'reveal' ke '.overlay' untuk mengatur tampilan display menjadi 'block'
-          const overlay = document.querySelector('.overlay');
-          overlay.classList.remove('reveal');
-        }
+          },
 
-        onMounted(async () => {
-            //fetch language
-            await axios.get(`https://api.quran.com/api/v4/resources/languages`)
+          tutupSidebar() {
+            this.isSidebarVisible = false;
+            // Menambahkan class 'reveal' ke '.overlay' untuk mengatur tampilan display menjadi 'block'
+            const overlay = document.querySelector('.overlay');
+            overlay.classList.remove('reveal');
+          },
+
+          changeLanguage() {
+            this.$emit("gantiBahasa", this.selectedLanguage)
+          }
+        },
+
+        mounted() {
+          axios.get(`https://api.quran.com/api/v4/resources/languages`)
                 .then(response => {
-                languages.value = response.data.languages;
+                    this.languages = response.data.languages;
                 })
                 .catch(error => {
                     console.error(error);
                 })
-        });
-
-        const changeLanguage = () => {
-          console.log(selectedLanguage.value);
-        }
-
-        return {
-          isSidebarVisible,
-          languages,
-          selectedLanguage,
-          bukaSidebar,
-          tutupSidebar,
-          changeLanguage
-        }
+        },
+        emits: ['gantiBahasa'], // Deklarasikan event yang diemits
 
       }
-    }
-
-    
+  
 
 </script>
 <style lang="">

@@ -1,8 +1,6 @@
 <template>
     
-
-    
-    <div class="container mt-5">
+    <div class="container mt-5" @some-event="callback">
         <div class="row">
             <div class="mx-auto text-center mb-5">
                 <h1 class="arab">{{ surah.name_arabic }}</h1>
@@ -71,69 +69,67 @@
 </template>
 <script>
 import axios from "axios";
-import { ref, onMounted } from "vue";
-import { useRoute } from "vue-router";
 import { Tooltip } from 'bootstrap';
 
 
 export default {
-    setup() {
-
-        const surahID = useRoute();
-        const surah = ref({})
-        const namaSurah = ref({})
-        const surahInfo =  ref({})
-        const ayat =  ref([])
-        const audioAyat = ref([])
-        const audioPlayers = []; // Array to store audio players
-        const selectedLanguage = ref('')
-
-        onMounted(async () => {
-
-            //fetch surah
-            await axios.get(`https://api.quran.com/api/v4/chapters/${surahID.params.id}?language=${selectedLanguage.value}`)
+    props: ['propLanguage'],
+    data() {
+        return {
+            surahID: this.$route.params.id,
+            surah: {},
+            namaSurah: {},
+            surahInfo:  {},
+            ayat:  [],
+            audioAyat: [],
+            audioPlayers: [], // Array to store audio players
+        }
+    },
+    mounted() {
+        axios.get(`https://api.quran.com/api/v4/chapters/${this.surahID}?language=${this.propLanguage}`)
                 .then(response => {
-                    surah.value = response.data.chapter;
-                    namaSurah.value = response.data.chapter.translated_name.name
+                    this.surah = response.data.chapter;
+                    this.namaSurah = response.data.chapter.translated_name.name
                 })
                 .catch(error => {
                     console.error(error);
                 })
-            //fetch info surah
-            await axios.get(`https://api.quran.com/api/v4/chapters/${surahID.params.id}/info?language=${selectedLanguage.value}`)
-                .then(response => {
-                    surahInfo.value = response.data.chapter_info;
-                })
-                .catch(error => {
-                    console.error(error);
-                })
-            //fetch ayat
-            await axios.get(`https://api.quran.com/api/v4/verses/by_chapter/${surahID.params.id}?language=${selectedLanguage.value}&words=true&word_fields=text_uthmani_tajweed&audio=2&per_page=300`)
-                .then(response => {
-                    ayat.value = response.data.verses;
-                })
-                .catch(error => {
-                    console.error(error);
-                })
-            //fetch audio ayat
-            await axios.get(`https://api.quran.com/api/v4/quran/recitations/1?chapter_number=${surahID.params.id}`)
-                .then(response => {
-                    audioAyat.value = response.data.audio_files;
-                })
-                .catch(error => {
-                    console.error(error);
-                }) 
+        //fetch info surah
+        axios.get(`https://api.quran.com/api/v4/chapters/${this.surahID}/info?language=${this.propLanguage}`)
+            .then(response => {
+                this.surahInfo = response.data.chapter_info;
+            })
+            .catch(error => {
+                console.error(error);
+            })
+        //fetch ayat
+        axios.get(`https://api.quran.com/api/v4/verses/by_chapter/${this.surahID}?language=${this.propLanguage}&words=true&word_fields=text_uthmani_tajweed&audio=2&per_page=300`)
+            .then(response => {
+                this.ayat = response.data.verses;
+            })
+            .catch(error => {
+                console.error(error);
+            })
+        //fetch audio ayat
+        axios.get(`https://api.quran.com/api/v4/quran/recitations/1?chapter_number=${this.surahID}`)
+            .then(response => {
+                this.audioAyat = response.data.audio_files;
+            })
+            .catch(error => {
+                console.error(error);
+            }) 
+    },
+    methods: {
+        // const tooltipTriggerList = [].slice.call(
+        //     document.querySelectorAll('#tooltip')
+        // ),
 
-            const tooltipTriggerList = [].slice.call(
-                document.querySelectorAll('#tooltip')
-            );
-            tooltipTriggerList.map(function (tooltipTriggerEl) {
-                return new Tooltip(tooltipTriggerEl);
-            });
-            
-        });
+        // tooltipTriggerList.map(function (tooltipTriggerEl) {
+        //     return new Tooltip(tooltipTriggerEl);
+        // }),
+        
 
-        const playAudioAyat = (nomor) => {
+        playAudioAyat(nomor) {
             var audio = document.getElementById("audio-ayat-" + nomor);
             var icon = document.getElementById("play-icon-" + nomor);
 
@@ -151,35 +147,17 @@ export default {
                 icon.classList.remove("fa-pause");
                 icon.classList.add("fa-play");
             });
-        }
+        },
 
-        const playAudioWord = (word) => {
+        playAudioWord(word) {
             // Your existing playAudioAyat function
 
             // Create and store audio player
             const audioPlayer = new Audio(`https://audio.qurancdn.com/${word.audio_url}`);
-            audioPlayers.push(audioPlayer);
+            this.audioPlayers.push(audioPlayer);
 
             // Play audio
             audioPlayer.play();
-        };
-
-        const callback = (language) => {
-            console.log(language);
-            selectedLanguage.value = language
-        }
-
-        return {
-            surah,
-            surahInfo,
-            ayat,
-            audioAyat,
-            namaSurah,
-            audioPlayers,
-            selectedLanguage,
-            playAudioAyat,
-            playAudioWord,
-            callback
         }
     }
 }
